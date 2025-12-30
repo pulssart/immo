@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simulateur de capacité d'achat immobilier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f5f6f8;
+      color: #111;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* Le bloc doit FIT son contenu. Donc pas de min-height forcée ici */
+    .container {
+      width: min(900px, 100%);
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0 0 8px 0;
+    }
+
+    p.subtitle {
+      color: #555;
+      margin: 0 0 32px 0;
+      line-height: 1.45;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .card {
+      background: #fafafa;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      margin: 0 0 16px 0;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 6px;
+      gap: 12px;
+    }
+
+    .field input[type=range] {
+      width: 100%;
+    }
+
+    .value {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .status-safe { color: #1f7a1f; font-weight: 600; }
+    .status-warning { color: #b36b00; font-weight: 600; }
+    .status-risk { color: #b00020; font-weight: 600; }
+
+    .results {
+      margin-top: 32px;
+      background: #111;
+      color: white;
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .result {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .result h3 {
+      font-size: 13px;
+      color: #aaa;
+      margin: 0 0 8px 0;
+      line-height: 1.2;
+    }
+
+    .result .big {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    footer {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #777;
+    }
+
+    /* Sur petits écrans, on préfère scroller plutôt que couper un centrage vertical */
+    @media (max-width: 820px) {
+      body {
+        align-items: flex-start;
+      }
+      .container {
+        padding: 20px;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Simulateur de capacité d'achat immobilier</h1>
+    <p class="subtitle">Ajuste les paramètres avec les sliders pour voir instantanément l’impact sur ta capacité d’achat. Tous les revenus sont exprimés en <strong>net après impôt</strong>, conformément à la logique bancaire.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Revenus mensuels nets après impôt</h2>
+
+        <div class="field">
+          <label>Revenu 1 (net après impôt) <span class="value" id="meIncomeValue">5 000 €</span></label>
+          <input type="range" min="0" max="10000" step="50" value="5000" id="meIncome" />
+          <div class="hint">Premier revenu mensuel net après impôt pris en compte par la banque.</div>
+        </div>
+
+        <div class="field">
+          <label>Revenu 2 (net après impôt) <span class="value" id="eliseIncomeValue">1 900 €</span></label>
+          <input type="range" min="0" max="10000" step="50" value="1900" id="eliseIncome" />
+          <div class="hint">Deuxième revenu mensuel net après impôt du foyer.</div>
+        </div>
+
+        <div class="field">
+          <label>Nombre d’enfants à charge <span class="value" id="childrenValue">0</span></label>
+          <input type="range" min="0" max="4" step="1" value="0" id="children" />
+          <div class="hint">Utilisé pour ajuster les seuils de reste à vivre et l’analyse du dossier.</div>
+        </div>
+
+        <div class="field">
+          <div class="hint">Reste à vivre estimé après crédit</div>
+          <div class="big"><span id="resteAVivre">0 €</span></div>
+          <div class="hint" id="resteAVivreStatus">—</div>
+          <div class="hint">Score de solidité du dossier : <strong><span id="dossierScore">—</span></strong></div>
+          <div class="hint">Position du foyer par rapport aux familles françaises : <strong><span id="francePosition">—</span></strong></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Paramètres du crédit</h2>
+
+        <div class="field">
+          <label>Ratio d’endettement <span class="value" id="ratioValue">33 %</span></label>
+          <input type="range" min="20" max="40" step="0.5" value="33" id="ratio" />
+          <div class="hint">33 % correspond au plafond standard HCSF. Au-delà de 35 %, seules certaines banques acceptent, avec un dossier très solide et un reste à vivre élevé.</div>
+        </div>
+
+        <div class="field">
+          <label>Durée du prêt <span class="value" id="durationValue">25 ans</span></label>
+          <input type="range" min="15" max="30" step="1" value="25" id="duration" />
+          <div class="hint">25 ans est la durée de référence la plus courante. Allonger la durée augmente la capacité mais renchérit fortement le coût total du crédit.</div>
+        </div>
+
+        <div class="field">
+          <label>Taux d’intérêt <span class="value" id="rateValue">3.00 %</span></label>
+          <input type="range" min="1.5" max="5" step="0.05" value="3" id="rate" />
+          <div class="hint">Le taux impacte directement la capacité d’emprunt. Une variation de 0,5 % peut représenter plusieurs dizaines de milliers d’euros sur 25 ans.</div>
+        </div>
+
+        <div class="field">
+          <label>Apport personnel <span class="value" id="apportValue">93 000 €</span></label>
+          <input type="range" min="0" max="250000" step="1000" value="93000" id="apport" />
+          <div class="hint">L’apport correspond au cash réel disponible, généralement issu de la revente du bien précédent. Il réduit le montant à emprunter et sécurise le dossier.</div>
+        </div>
+
+        <div class="field">
+          <label>Frais totaux <span class="value" id="feesValue">8.50 %</span></label>
+          <input type="range" min="5" max="12" step="0.25" value="8.5" id="fees" />
+          <div class="hint">Les frais incluent notaire, garantie et frais bancaires. En ancien, ils sont souvent compris entre 7 % et 9 % du prix du bien.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="results-grid">
+        <div class="result">
+          <h3>Mensualité max (<span id="ratioLabel">33</span> %)</h3>
+          <div class="big" id="monthlyMax">0 €</div>
+        </div>
+        <div class="result">
+          <h3>Emprunt maximum</h3>
+          <div class="big" id="loanMax">0 €</div>
+        </div>
+        <div class="result">
+          <h3>Capacité d'achat estimé</h3>
+          <div class="big" id="propertyPrice">0 €</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Simulateur indicatif, non contractuel.
+    </footer>
+  </div>
+
+  <script>
+    // On attend que le DOM soit prêt. Ça évite toute référence null si le script bouge.
+    document.addEventListener('DOMContentLoaded', () => {
+      const meIncome = document.getElementById('meIncome');
+      const eliseIncome = document.getElementById('eliseIncome');
+      const duration = document.getElementById('duration');
+      const rate = document.getElementById('rate');
+      const apport = document.getElementById('apport');
+      const ratio = document.getElementById('ratio');
+      const fees = document.getElementById('fees');
+      const children = document.getElementById('children');
+
+      const meIncomeValue = document.getElementById('meIncomeValue');
+      const eliseIncomeValue = document.getElementById('eliseIncomeValue');
+      const durationValue = document.getElementById('durationValue');
+      const rateValue = document.getElementById('rateValue');
+      const apportValue = document.getElementById('apportValue');
+      const ratioValue = document.getElementById('ratioValue');
+      const feesValue = document.getElementById('feesValue');
+      const ratioLabel = document.getElementById('ratioLabel');
+      const childrenValue = document.getElementById('childrenValue');
+      const dossierScoreEl = document.getElementById('dossierScore');
+      const francePositionEl = document.getElementById('francePosition');
+
+      const monthlyMaxEl = document.getElementById('monthlyMax');
+      const loanMaxEl = document.getElementById('loanMax');
+      const propertyPriceEl = document.getElementById('propertyPrice');
+      const resteAVivreEl = document.getElementById('resteAVivre');
+      const resteAVivreStatusEl = document.getElementById('resteAVivreStatus');
+
+      // Guard. Si une modif HTML casse un id, on a une erreur explicite.
+      const required = {
+        meIncome, eliseIncome, duration, rate, apport, ratio, fees,
+        meIncomeValue, eliseIncomeValue, durationValue, rateValue, apportValue, ratioValue, feesValue,
+        monthlyMaxEl, loanMaxEl, propertyPriceEl, resteAVivreEl, ratioLabel
+      };
+
+      for (const [key, el] of Object.entries(required)) {
+        if (!el) {
+          throw new Error(`Élément DOM manquant : ${key}. Vérifie l'id dans le HTML.`);
+        }
+      }
+
+      function format(euro) {
+        return Math.round(euro).toLocaleString('fr-FR') + ' €';
+      }
+
+      // Mensualité -> capital empruntable
+      function calculateLoan(monthly, annualRatePct, years) {
+        const r = Number(annualRatePct) / 100 / 12;
+        const n = Number(years) * 12;
+        if (n <= 0) return 0;
+        if (r === 0) return monthly * n;
+        const pow = (1 + r) ** n;
+        return monthly * (pow - 1) / (r * pow);
+      }
+
+      function update() {
+        const income = Number(meIncome.value) + Number(eliseIncome.value);
+        const nbChildren = Number(children.value);
+        childrenValue.textContent = nbChildren;
+        const ratioPct = Number(ratio.value) / 100;
+        const monthlyMax = income * ratioPct;
+
+        const loanMax = calculateLoan(monthlyMax, rate.value, duration.value);
+        const totalBudget = loanMax + Number(apport.value);
+        const feesPct = Number(fees.value) / 100;
+        const propertyPrice = totalBudget / (1 + feesPct);
+
+        meIncomeValue.textContent = format(meIncome.value);
+        eliseIncomeValue.textContent = format(eliseIncome.value);
+        durationValue.textContent = duration.value + ' ans';
+        rateValue.textContent = Number(rate.value).toFixed(2) + ' %';
+        apportValue.textContent = format(apport.value);
+        ratioValue.textContent = ratio.value + ' %';
+        ratioLabel.textContent = ratio.value;
+        feesValue.textContent = Number(fees.value).toFixed(2) + ' %';
+
+        monthlyMaxEl.textContent = format(monthlyMax);
+        const resteAVivre = income - monthlyMax;
+        resteAVivreEl.textContent = format(resteAVivre);
+
+        // Indicateur de confort bancaire basé sur le reste à vivre
+        let statusText = '';
+        resteAVivreStatusEl.className = 'hint';
+        const seuilConfort = 3000 + nbChildren * 500;
+        const seuilAcceptable = 2000 + nbChildren * 400;
+
+        if (resteAVivre >= seuilConfort) {
+          statusText = 'Situation favorable · reste à vivre confortable';
+          resteAVivreStatusEl.classList.add('status-safe');
+        } else if (resteAVivre >= 2000) {
+          statusText = 'Situation acceptable · vigilance modérée';
+          resteAVivreStatusEl.classList.add('status-warning');
+        } else {
+          statusText = 'Situation risquée · reste à vivre faible pour un foyer';
+          resteAVivreStatusEl.classList.add('status-risk');
+        }
+        resteAVivreStatusEl.textContent = statusText;
+
+        // Score de solidité du dossier
+        let score = 'Fragile';
+        if (resteAVivre >= seuilConfort && ratio.value <= 33) score = 'Très solide';
+        else if (resteAVivre >= seuilAcceptable && ratio.value <= 35) score = 'Solide';
+        dossierScoreEl.textContent = score;
+
+        // Position relative par rapport aux familles françaises (approximation pédagogique)
+        let francePosition = '';
+        if (income < 2000) francePosition = 'Bien en dessous de la moyenne nationale';
+        else if (income < 4000) francePosition = 'Proche de la moyenne des ménages français';
+        else if (income < 5000) francePosition = 'Au-dessus de la moyenne nationale';
+        else if (income < 6500) francePosition = 'Parmi les ~20 % des familles françaises les plus aisées';
+        else francePosition = 'Parmi les ~10 % des familles françaises les plus aisées';
+        francePositionEl.textContent = francePosition;
+        loanMaxEl.textContent = format(loanMax);
+        propertyPriceEl.textContent = format(propertyPrice);
+      }
+
+      document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', update);
+      });
+
+      // --- Lightweight self-tests (no framework) ---
+      function approxEqual(a, b, tol = 1e-6) {
+        return Math.abs(a - b) <= tol;
+      }
+
+      function runTests() {
+        // Test 0: DOM nodes exist
+        console.assert(!!meIncome && !!eliseIncome, 'Test DOM nodes failed');
+
+        // Test 1: rate 0 should be monthly * n
+        console.assert(approxEqual(calculateLoan(1000, 0, 1), 12000), 'Test rate=0 failed');
+
+        // Test 2: loan should increase with duration (all else equal)
+        const loan20 = calculateLoan(2000, 3, 20);
+        const loan25 = calculateLoan(2000, 3, 25);
+        console.assert(loan25 > loan20, 'Test duration monotonicity failed');
+
+        // Test 3: loan should decrease with rate (all else equal)
+        const loanLow = calculateLoan(2000, 2, 25);
+        const loanHigh = calculateLoan(2000, 4, 25);
+        console.assert(loanLow > loanHigh, 'Test rate monotonicity failed');
+
+        // Test 4: update should not throw and should produce finite numbers
+        update();
+        const strip = (s) => Number(String(s).replace(/\s/g,'').replace('€','').replace(/\./g,'').replace(',','.'));
+        console.assert(Number.isFinite(strip(monthlyMaxEl.textContent)), 'Test update finite failed');
+      }
+
+      runTests();
+      update();
+    });
+  </script>
+</body>
+</html>
