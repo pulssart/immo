@@ -172,22 +172,22 @@
 <body>
   <div class="container">
     <h1>Simulateur de capacité d'achat immobilier</h1>
-    <p class="subtitle">Ajuste les paramètres avec les sliders pour voir instantanément l'impact sur ta capacité d'achat. Les revenus sont exprimés en <strong>brut</strong>, conformément à la logique bancaire (les banques calculent le ratio d'endettement sur les revenus bruts).</p>
+    <p class="subtitle">Ajuste les paramètres avec les sliders pour voir instantanément l'impact sur ta capacité d'achat. Les revenus sont exprimés en <strong>net avant impôt (net imposable)</strong>, conformément à la logique bancaire (les banques calculent le ratio d'endettement sur ce montant).</p>
 
     <div class="grid">
       <div class="card">
-        <h2>Revenus mensuels bruts</h2>
+        <h2>Revenus mensuels nets (avant impôt)</h2>
 
         <div class="field">
-          <label>Revenu 1 (brut) <span class="value" id="meIncomeValue">5 000 €</span></label>
+          <label>Revenu 1 (net imposable) <span class="value" id="meIncomeValue">5 000 €</span></label>
           <input type="range" min="0" max="10000" step="50" value="5000" id="meIncome" />
-          <div class="hint">Premier revenu mensuel brut pris en compte par la banque pour le calcul du ratio d'endettement.</div>
+          <div class="hint">Premier revenu mensuel net avant impôt (le montant imposable sur ta fiche de paie).</div>
         </div>
 
         <div class="field">
-          <label>Revenu 2 (brut) <span class="value" id="eliseIncomeValue">1 900 €</span></label>
+          <label>Revenu 2 (net imposable) <span class="value" id="eliseIncomeValue">1 900 €</span></label>
           <input type="range" min="0" max="10000" step="50" value="1900" id="eliseIncome" />
-          <div class="hint">Deuxième revenu mensuel brut du foyer.</div>
+          <div class="hint">Deuxième revenu mensuel net avant impôt du foyer.</div>
         </div>
 
         <div class="field">
@@ -322,12 +322,12 @@
       }
 
       function update() {
-        const incomeBrut = Number(meIncome.value) + Number(eliseIncome.value);
+        const incomeNetAvantImpot = Number(meIncome.value) + Number(eliseIncome.value);
         const nbChildren = Number(children.value);
         childrenValue.textContent = nbChildren;
         const ratioPct = Number(ratio.value) / 100;
-        // Le ratio d'endettement s'applique sur les revenus bruts (logique bancaire)
-        const monthlyMax = incomeBrut * ratioPct;
+        // Le ratio d'endettement s'applique sur les revenus nets avant impôt (logique bancaire standard)
+        const monthlyMax = incomeNetAvantImpot * ratioPct;
 
         const loanMax = calculateLoan(monthlyMax, rate.value, duration.value);
         const totalBudget = loanMax + Number(apport.value);
@@ -344,9 +344,9 @@
         feesValue.textContent = Number(fees.value).toFixed(2) + ' %';
 
         monthlyMaxEl.textContent = format(monthlyMax);
-        // Pour le reste à vivre, on utilise les revenus nets (approximation: brut * 0.75)
-        const incomeNet = incomeBrut * 0.75;
-        const resteAVivre = incomeNet - monthlyMax;
+        // Pour le reste à vivre, on utilise les revenus nets après impôt (approximation: net avant impôt * 0.9)
+        const incomeNetApresImpot = incomeNetAvantImpot * 0.9;
+        const resteAVivre = incomeNetApresImpot - monthlyMax;
         resteAVivreEl.textContent = format(resteAVivre);
 
         // Indicateur de confort bancaire basé sur le reste à vivre
@@ -374,12 +374,12 @@
         dossierScoreEl.textContent = score;
 
         // Position relative par rapport aux familles françaises (approximation pédagogique)
-        // Les seuils sont ajustés pour les revenus bruts
+        // Les seuils sont ajustés pour les revenus nets avant impôt
         let francePosition = '';
-        if (incomeBrut < 3000) francePosition = 'Bien en dessous de la moyenne nationale';
-        else if (incomeBrut < 5500) francePosition = 'Proche de la moyenne des ménages français';
-        else if (incomeBrut < 7000) francePosition = 'Au-dessus de la moyenne nationale';
-        else if (incomeBrut < 9000) francePosition = 'Parmi les ~20 % des familles françaises les plus aisées';
+        if (incomeNetAvantImpot < 2400) francePosition = 'Bien en dessous de la moyenne nationale';
+        else if (incomeNetAvantImpot < 4500) francePosition = 'Proche de la moyenne des ménages français';
+        else if (incomeNetAvantImpot < 5500) francePosition = 'Au-dessus de la moyenne nationale';
+        else if (incomeNetAvantImpot < 7500) francePosition = 'Parmi les ~20 % des familles françaises les plus aisées';
         else francePosition = 'Parmi les ~10 % des familles françaises les plus aisées';
         francePositionEl.textContent = francePosition;
         loanMaxEl.textContent = format(loanMax);
@@ -395,10 +395,10 @@
         const content = `RÉCAPITULATIF SIMULATION IMMOBILIÈRE - ${date}
 
 --- REVENUS ---
-Revenu 1 (Brut) : ${meIncomeValue.textContent}
-Revenu 2 (Brut) : ${eliseIncomeValue.textContent}
+Revenu 1 (Net imposable) : ${meIncomeValue.textContent}
+Revenu 2 (Net imposable) : ${eliseIncomeValue.textContent}
 Nombre d'enfants : ${childrenValue.textContent}
-Reste à vivre : ${resteAVivreEl.textContent} (${resteAVivreStatusEl.textContent})
+Reste à vivre (estimé après impôt) : ${resteAVivreEl.textContent} (${resteAVivreStatusEl.textContent})
 
 --- PARAMÈTRES CRÉDIT ---
 Ratio d'endettement : ${ratioValue.textContent}
