@@ -125,6 +125,54 @@
       line-height: 1.2;
     }
 
+    /* Styles pour les tooltips */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      margin-left: 4px;
+      color: #999;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      width: 220px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 10px;
+      position: absolute;
+      z-index: 10;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -110px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.4;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .tooltip .tooltip-text::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #333 transparent transparent transparent;
+    }
+
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+
     .download-btn {
       display: block;
       width: 100%;
@@ -181,13 +229,13 @@
         <div class="field">
           <label>Revenu 1 (net imposable) <span class="value" id="meIncomeValue">5 000 €</span></label>
           <input type="range" min="0" max="10000" step="50" value="5000" id="meIncome" />
-          <div class="hint">Premier revenu mensuel net avant impôt (le montant imposable sur ta fiche de paie).</div>
+          <div class="hint">Premier revenu mensuel net avant impôt. Inclus le 13ème mois et les primes récurrentes lissées sur 12 mois.</div>
         </div>
 
         <div class="field">
           <label>Revenu 2 (net imposable) <span class="value" id="eliseIncomeValue">1 900 €</span></label>
           <input type="range" min="0" max="10000" step="50" value="1900" id="eliseIncome" />
-          <div class="hint">Deuxième revenu mensuel net avant impôt du foyer.</div>
+          <div class="hint">Deuxième revenu mensuel net avant impôt du foyer (primes incluses).</div>
         </div>
 
         <div class="field">
@@ -233,7 +281,7 @@
         </div>
 
         <div class="field">
-          <label>Frais totaux <span class="value" id="feesValue">8.50 %</span></label>
+          <label>Frais totaux <span class="value" id="feesValue">8.50 %</span> <span class="tooltip">ⓘ<span class="tooltip-text">7-8% pour l'ancien, 2-3% pour le neuf. Inclut notaire, garantie et frais de dossier.</span></span></label>
           <input type="range" min="5" max="12" step="0.25" value="8.5" id="fees" />
           <div class="hint">Les frais incluent notaire, garantie et frais bancaires. En ancien, ils sont souvent compris entre 7 % et 9 % du prix du bien.</div>
         </div>
@@ -251,7 +299,7 @@
           <div class="big" id="loanMax">0 €</div>
         </div>
         <div class="result">
-          <h3>Capacité d'achat estimé</h3>
+          <h3>Capacité d'achat estimé <span class="tooltip">ⓘ<span class="tooltip-text">C'est le prix que tu dois viser sur les annonces immobilières. Les frais (notaire, etc.) sont déjà déduits de ton budget total.</span></span></h3>
           <div class="big" id="propertyPrice">0 €</div>
         </div>
       </div>
