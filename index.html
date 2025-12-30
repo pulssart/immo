@@ -530,7 +530,8 @@
         monthlyMaxEl.textContent = format(monthlyMax);
         // Pour le reste à vivre, on utilise les revenus nets après impôt (approximation: net avant impôt * 0.9)
         const incomeNetApresImpot = incomeNetAvantImpot * 0.9;
-        const resteAVivre = incomeNetApresImpot - monthlyMax;
+        // Le vrai reste à vivre = Revenus - Mensualité nouveau prêt - Autres charges existantes
+        const resteAVivre = incomeNetApresImpot - monthlyMax - monthlyCharges;
         resteAVivreEl.textContent = format(resteAVivre);
 
         // Indicateur de confort bancaire basé sur le reste à vivre
