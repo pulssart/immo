@@ -125,6 +125,27 @@
       line-height: 1.2;
     }
 
+    .download-btn {
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      padding: 16px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .download-btn:hover {
+      background: #444;
+    }
+
     footer {
       margin-top: 24px;
       font-size: 12px;
@@ -234,6 +255,7 @@
           <div class="big" id="propertyPrice">0 €</div>
         </div>
       </div>
+      <button id="downloadBtn" class="download-btn">Télécharger le récapitulatif (TXT)</button>
     </div>
 
     <footer>
@@ -270,6 +292,7 @@
       const propertyPriceEl = document.getElementById('propertyPrice');
       const resteAVivreEl = document.getElementById('resteAVivre');
       const resteAVivreStatusEl = document.getElementById('resteAVivreStatus');
+      const downloadBtn = document.getElementById('downloadBtn');
 
       // Guard. Si une modif HTML casse un id, on a une erreur explicite.
       const required = {
@@ -366,6 +389,48 @@
       document.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', update);
       });
+
+      function downloadSummary() {
+        const date = new Date().toLocaleDateString('fr-FR');
+        const content = `RÉCAPITULATIF SIMULATION IMMOBILIÈRE - ${date}
+
+--- REVENUS ---
+Revenu 1 (Brut) : ${meIncomeValue.textContent}
+Revenu 2 (Brut) : ${eliseIncomeValue.textContent}
+Nombre d'enfants : ${childrenValue.textContent}
+Reste à vivre : ${resteAVivreEl.textContent} (${resteAVivreStatusEl.textContent})
+
+--- PARAMÈTRES CRÉDIT ---
+Ratio d'endettement : ${ratioValue.textContent}
+Durée du prêt : ${durationValue.textContent}
+Taux d'intérêt : ${rateValue.textContent}
+Apport personnel : ${apportValue.textContent}
+Frais totaux : ${feesValue.textContent}
+
+--- RÉSULTATS ---
+Mensualité max : ${monthlyMaxEl.textContent}
+Emprunt maximum : ${loanMaxEl.textContent}
+Capacité d'achat estimée : ${propertyPriceEl.textContent}
+Score du dossier : ${dossierScoreEl.textContent}
+
+--- POSITIONNEMENT ---
+${francePositionEl.textContent}
+
+--------------------------------------------------
+Simulateur indicatif, non contractuel.`;
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `simulation-immo-${new Date().getTime()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      downloadBtn.addEventListener('click', downloadSummary);
 
       // --- Lightweight self-tests (no framework) ---
       function approxEqual(a, b, tol = 1e-6) {
