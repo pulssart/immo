@@ -579,23 +579,36 @@
 
       function downloadSummary() {
         const date = new Date().toLocaleDateString('fr-FR');
+        const isRelais = relaisToggle.checked;
+        
+        let relaisText = '';
+        if (isRelais) {
+          relaisText = `
+--- PRÊT RELAIS ---
+Valeur du bien actuel : ${currentValueLabel.textContent}
+Capital restant dû : ${remainingDebtLabel.textContent}
+Apport relais généré (80%) : ${apportRelaisLabel.textContent}
+`;
+        }
+
         const content = `RÉCAPITULATIF SIMULATION IMMOBILIÈRE - ${date}
 
---- REVENUS ---
+--- REVENUS ET CHARGES ---
 Revenu 1 (Net imposable) : ${meIncomeValue.textContent}
 Revenu 2 (Net imposable) : ${eliseIncomeValue.textContent}
 Nombre d'enfants : ${childrenValue.textContent}
+Autres charges mensuelles : ${chargesValue.textContent}
 Reste à vivre (estimé après impôt) : ${resteAVivreEl.textContent} (${resteAVivreStatusEl.textContent})
-
+${relaisText}
 --- PARAMÈTRES CRÉDIT ---
 Ratio d'endettement : ${ratioValue.textContent}
 Durée du prêt : ${durationValue.textContent}
 Taux d'intérêt : ${rateValue.textContent}
-Apport personnel : ${apportValue.textContent}
+Apport personnel (cash) : ${apportValue.textContent}
 Frais totaux : ${feesValue.textContent}
 
 --- RÉSULTATS ---
-Mensualité max : ${monthlyMaxEl.textContent}
+Mensualité max nouveau prêt : ${monthlyMaxEl.textContent}
 Emprunt maximum : ${loanMaxEl.textContent}
 Capacité d'achat estimée : ${propertyPriceEl.textContent}
 Score du dossier : ${dossierScoreEl.textContent}
