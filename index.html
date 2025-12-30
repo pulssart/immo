@@ -197,6 +197,75 @@
       background: #444;
     }
 
+    /* Switch toggle */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: #eee;
+      border-radius: 8px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #111;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .relais-fields {
+      display: none;
+      padding: 16px;
+      background: #f0f0f0;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #111;
+    }
+
+    .relais-fields.active {
+      display: block;
+    }
+
     footer {
       margin-top: 24px;
       font-size: 12px;
@@ -258,6 +327,28 @@
 
       <div class="card">
         <h2>Paramètres du crédit</h2>
+
+        <div class="switch-container">
+          <span>Prêt relais <span class="tooltip">ⓘ<span class="tooltip-text">Active cette option si tu achètes avant d'avoir vendu ton bien actuel. La banque t'avance environ 70% de la valeur nette de ton bien.</span></span></span>
+          <label class="switch">
+            <input type="checkbox" id="relaisToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div id="relaisFields" class="relais-fields">
+          <div class="field">
+            <label>Valeur du bien actuel <span class="value" id="currentValueLabel">300 000 €</span></label>
+            <input type="range" min="50000" max="1500000" step="5000" value="300000" id="currentValue">
+          </div>
+          <div class="field">
+            <label>Capital restant dû <span class="value" id="remainingDebtLabel">0 €</span></label>
+            <input type="range" min="0" max="1000000" step="5000" value="0" id="remainingDebt">
+          </div>
+          <div class="hint" style="color: #111; font-weight: 600;">
+            Apport relais estimé (70%) : <span id="apportRelaisLabel">0 €</span>
+          </div>
+        </div>
 
         <div class="field">
           <label>Ratio d’endettement <span class="value" id="ratioValue">33 %</span></label>
@@ -325,6 +416,10 @@
       const ratio = document.getElementById('ratio');
       const fees = document.getElementById('fees');
       const children = document.getElementById('children');
+      const relaisToggle = document.getElementById('relaisToggle');
+      const relaisFields = document.getElementById('relaisFields');
+      const currentValue = document.getElementById('currentValue');
+      const remainingDebt = document.getElementById('remainingDebt');
 
       const meIncomeValue = document.getElementById('meIncomeValue');
       const eliseIncomeValue = document.getElementById('eliseIncomeValue');
@@ -335,6 +430,9 @@
       const feesValue = document.getElementById('feesValue');
       const ratioLabel = document.getElementById('ratioLabel');
       const childrenValue = document.getElementById('childrenValue');
+      const currentValueLabel = document.getElementById('currentValueLabel');
+      const remainingDebtLabel = document.getElementById('remainingDebtLabel');
+      const apportRelaisLabel = document.getElementById('apportRelaisLabel');
       const dossierScoreEl = document.getElementById('dossierScore');
       const francePositionEl = document.getElementById('francePosition');
 
@@ -377,11 +475,34 @@
         const nbChildren = Number(children.value);
         childrenValue.textContent = nbChildren;
         const ratioPct = Number(ratio.value) / 100;
-        // Le ratio d'endettement s'applique sur les revenus nets avant impôt (logique bancaire standard)
-        const monthlyMax = incomeNetAvantImpot * ratioPct;
+        
+        let monthlyMax = incomeNetAvantImpot * ratioPct;
+        let additionalApport = 0;
+
+        // Gestion du prêt relais
+        if (relaisToggle.checked) {
+          relaisFields.classList.add('active');
+          const val = Number(currentValue.value);
+          const debt = Number(remainingDebt.value);
+          const netValue = Math.max(0, val - debt);
+          additionalApport = netValue * 0.7; // La banque avance 70% de la valeur nette
+
+          // On estime le coût mensuel des intérêts du prêt relais (taux légèrement plus élevé +0.2%)
+          const relaisRate = (Number(rate.value) + 0.2) / 100 / 12;
+          const monthlyRelaisInterests = additionalApport * relaisRate;
+          
+          // Ces intérêts viennent réduire la capacité de remboursement mensuelle pour le nouveau prêt
+          monthlyMax = Math.max(0, monthlyMax - monthlyRelaisInterests);
+
+          currentValueLabel.textContent = format(val);
+          remainingDebtLabel.textContent = format(debt);
+          apportRelaisLabel.textContent = format(additionalApport);
+        } else {
+          relaisFields.classList.remove('active');
+        }
 
         const loanMax = calculateLoan(monthlyMax, rate.value, duration.value);
-        const totalBudget = loanMax + Number(apport.value);
+        const totalBudget = loanMax + Number(apport.value) + additionalApport;
         const feesPct = Number(fees.value) / 100;
         const propertyPrice = totalBudget / (1 + feesPct);
 
@@ -440,6 +561,8 @@
       document.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', update);
       });
+
+      relaisToggle.addEventListener('change', update);
 
       function downloadSummary() {
         const date = new Date().toLocaleDateString('fr-FR');
